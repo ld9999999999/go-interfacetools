@@ -15,6 +15,10 @@ import (
 // of the json tag of the field; the same rules apply per encoding/json.
 // If a field is not available, then a copier skips it.
 func CopyOut(src interface{}, out interface{}) (err error) {
+	return CopyOutTagged(src, out, "json")
+}
+
+func CopyOutTagged(src interface{}, out interface{}, tag string) (err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = r.(error)
@@ -26,18 +30,19 @@ func CopyOut(src interface{}, out interface{}) (err error) {
 		return errors.New("output interface must be a pointer")
 	}
 
-	dec := newDecoder()
+	dec := newDecoder(tag)
 	iv := reflect.ValueOf(src)
 	ov := reflect.ValueOf(out)
 	return dec.decode(iv, ov)
 }
 
 type decoder struct {
-	path   []string
+	tag  string
+	path []string
 }
 
-func newDecoder() *decoder {
-	return &decoder{make([]string, 0, 12)}
+func newDecoder(tag string) *decoder {
+	return &decoder{tag, make([]string, 0, 12)}
 }
 
 func (d *decoder) pathString() string {
@@ -181,7 +186,7 @@ func (d *decoder) mapToStruct(src reflect.Value, dst reflect.Value) error {
 	fieldIdx := make(map[string] int)
 	for i := 0; i < dst.Type().NumField(); i++ {
 		sf := dst.Type().Field(i)
-		tag := sf.Tag.Get("json")
+		tag := sf.Tag.Get(d.tag)
 		if tag == "" {
 			// do by name (only if exported field)
 			if sf.Name[0] >= 'A' && sf.Name[0] <= 'Z' {
