@@ -239,13 +239,6 @@ func (d *decoder) decodeScalar(src reflect.Value, dst reflect.Value) (err error)
 		}
 	}()
 
-	if dst.Kind() == reflect.Ptr {
-		if dst.IsNil() {
-			dst = reflect.New(dst.Type().Elem())
-		}
-		dst = dst.Elem()
-	}
-
 	switch dst.Kind() {
 	case reflect.Bool:
 		dst.SetBool(src.Bool())
