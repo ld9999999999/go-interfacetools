@@ -139,7 +139,7 @@ func (d *decoder) decode(sv reflect.Value, v reflect.Value) error {
 		}
 
 		if v.Kind() == reflect.Slice && v.IsNil() {
-			v.Set(reflect.MakeSlice(v.Type(), sv.Cap(), sv.Cap()))
+			v.Set(reflect.MakeSlice(v.Type(), sv.Len(), sv.Len()))
 		}
 
 		return d.sliceCopy(sv, v)
