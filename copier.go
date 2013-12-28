@@ -9,6 +9,15 @@ import (
 	"fmt"
 )
 
+// Copier is the interface implemented by objects
+// that can decode input interfaces themselves.
+// The Copier must copy the input data if it wishes
+// to retain the data after returning. Unhandled
+// input must return an error.
+type Copier interface {
+	CopyIn(interface{}) error
+}
+
 // Performs a deep-copy of source object to the passed in interface.
 //
 // If the object is a struct, then the copy is attempted based on the tag
@@ -76,6 +85,43 @@ func (d *decoder) popPath() string {
 	return ""
 }
 
+func (d *decoder) tryCopyIn(sv reflect.Value, v reflect.Value) bool {
+	// If v is a named type and is addressable,
+	// start with its address, so that if the type has pointer methods,
+	// we find them.
+	if v.Kind() != reflect.Ptr && v.Type().Name() != "" && v.CanAddr() {
+		v = v.Addr()
+	}
+	for {
+		// Load value from interface, but only if the result will be
+		// usefully addressable.
+		if v.Kind() == reflect.Interface && !v.IsNil() {
+			e := v.Elem()
+			if e.Kind() == reflect.Ptr && !e.IsNil() && e.Elem().Kind() == reflect.Ptr {
+				v = e
+				continue
+			}
+		}
+		if v.Kind() != reflect.Ptr {
+			break
+		}
+		if v.IsNil() {
+			v.Set(reflect.New(v.Type().Elem()))
+		}
+		if v.Type().NumMethod() > 0 {
+			if u, ok := v.Interface().(Copier); ok {
+				// Can now attempt CopyIn
+				if u.CopyIn(sv.Interface()) == nil {
+					return true
+				}
+			}
+		}
+		v = v.Elem()
+	}
+
+	return false
+}
+
 func (d *decoder) decode(sv reflect.Value, v reflect.Value) error {
 	if v.Kind() == reflect.Ptr && !v.IsNil() {
 		v = v.Elem()
@@ -116,6 +162,10 @@ func (d *decoder) decode(sv reflect.Value, v reflect.Value) error {
 			v.Set(reflect.MakeMap(t))
 		}
 
+		if d.tryCopyIn(sv, v) {
+			return nil
+		}
+
 		return d.mapCopy(sv, v)
 
 	case reflect.Struct:
@@ -125,6 +175,10 @@ func (d *decoder) decode(sv reflect.Value, v reflect.Value) error {
 		}
 		if v.Kind() == reflect.Ptr && v.IsNil() {
 			v.Set(reflect.New(e))
+		}
+
+		if d.tryCopyIn(sv, v) {
+			return nil
 		}
 
 		if v.Kind() == reflect.Ptr {
@@ -142,16 +196,29 @@ func (d *decoder) decode(sv reflect.Value, v reflect.Value) error {
 			v.Set(reflect.MakeSlice(v.Type(), sv.Len(), sv.Len()))
 		}
 
+		if d.tryCopyIn(sv, v) {
+			return nil
+		}
+
 		return d.sliceCopy(sv, v)
 	}
 
 	if v.Kind() == reflect.Ptr {
 		nv := reflect.New(e)
+
+		if d.tryCopyIn(sv, nv) {
+			return nil
+		}
+
 		err := d.decodeScalar(sv, nv)
 		if err == nil {
 			v.Set(nv)
 		}
 		return err
+	}
+
+	if d.tryCopyIn(sv, v) {
+		return nil
 	}
 
 	return d.decodeScalar(sv, v)

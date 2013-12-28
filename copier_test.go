@@ -6,7 +6,22 @@ import (
 	"encoding/json"
 	"log"
 	"testing"
+	"fmt"
 )
+
+type MStruct_o struct {
+	V string  `json:"v"`
+}
+
+// Example implementaiton of CopyIn custom converter
+func (m *MStruct_o) CopyIn(v interface{}) error {
+	if x, ok := v.(map[string] interface{}); ok {
+		if n, ok := x["v"]; ok {
+			m.V = fmt.Sprintf("copy in of different source type: %v", n)
+		}
+	}
+	return nil
+}
 
 func TestCopyTo(t *testing.T) {
 	type MStruct struct {
@@ -34,10 +49,6 @@ func TestCopyTo(t *testing.T) {
 	}
 
 	// structs used for copyout with different types to original
-	type MStruct_o struct {
-		V string  `json:"v"`
-	}
-
 	type TStruct_o struct {
 		I string       `json:"i"`
 		J int          `json:"j"`
@@ -102,8 +113,8 @@ func TestCopyTo(t *testing.T) {
 	// Copy out to a struct with incompatible field types
 	var xs0 TStruct_o
 	err = CopyOut(sj, &xs0)
-	if err == nil {
-		log.Println("Error expected, but got nil")
+	if err != nil {
+		t.Fatalf("CopyOut for struct with CopyIn() error: %s", err)
 	}
 	jsons, err = json.MarshalIndent(&xs0, "", "  ")
 	log.Println("CopyOut result 2:", string(jsons))
