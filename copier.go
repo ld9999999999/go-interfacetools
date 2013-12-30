@@ -151,6 +151,10 @@ func (d *decoder) decode(sv reflect.Value, v reflect.Value) error {
 
 	switch e.Kind() {
 	case reflect.Map:
+		if d.tryCopyIn(sv, v) {
+			return nil
+		}
+
 		if sv.Kind() != reflect.Map {
 			return errors.New("src not map")
 		}
@@ -162,23 +166,19 @@ func (d *decoder) decode(sv reflect.Value, v reflect.Value) error {
 			v.Set(reflect.MakeMap(t))
 		}
 
+		return d.mapCopy(sv, v)
+
+	case reflect.Struct:
 		if d.tryCopyIn(sv, v) {
 			return nil
 		}
 
-		return d.mapCopy(sv, v)
-
-	case reflect.Struct:
 		// Decode map[string] interface{} into struct
 		if sv.Kind() != reflect.Map {
 			return errors.New("src not map")
 		}
 		if v.Kind() == reflect.Ptr && v.IsNil() {
 			v.Set(reflect.New(e))
-		}
-
-		if d.tryCopyIn(sv, v) {
-			return nil
 		}
 
 		if v.Kind() == reflect.Ptr {
@@ -188,16 +188,16 @@ func (d *decoder) decode(sv reflect.Value, v reflect.Value) error {
 		}
 
 	case reflect.Slice, reflect.Array:
+		if d.tryCopyIn(sv, v) {
+			return nil
+		}
+
 		if sv.Kind() != reflect.Slice {
 			return errors.New("src not slice")
 		}
 
 		if v.Kind() == reflect.Slice && v.IsNil() {
 			v.Set(reflect.MakeSlice(v.Type(), sv.Len(), sv.Len()))
-		}
-
-		if d.tryCopyIn(sv, v) {
-			return nil
 		}
 
 		return d.sliceCopy(sv, v)
