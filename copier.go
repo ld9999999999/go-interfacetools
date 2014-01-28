@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"bytes"
 	"fmt"
+	"strconv"
 )
 
 // Copier is the interface implemented by objects
@@ -311,13 +312,78 @@ func (d *decoder) decodeScalar(src reflect.Value, dst reflect.Value) (err error)
 		dst.SetBool(src.Bool())
 
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		dst.SetInt(int64(src.Float()))
+		switch src.Kind() {
+		case reflect.String:
+			n, err := strconv.ParseInt(src.String(), 10, 64)
+			if err != nil {
+				return err
+			}
+			dst.SetInt(n)
+
+		case reflect.Float32, reflect.Float64:
+			dst.SetInt(int64(src.Float()))
+
+		case reflect.Int, reflect.Int8, reflect.Int16,
+		     reflect.Int32, reflect.Int64:
+			dst.SetInt(src.Int())
+
+		case reflect.Uint, reflect.Uint8, reflect.Uint16,
+		     reflect.Uint32, reflect.Uint64:
+			dst.SetInt(int64(src.Uint()))
+
+		default:
+			return errors.New(fmt.Sprintf("Cannot convert source kind %v to destination kind %v", src.Kind(), dst.Kind()))
+		}
+
 
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		dst.SetUint(uint64(src.Float()))
+		switch src.Kind() {
+		case reflect.String:
+			n, err := strconv.ParseUint(src.String(), 10, 64)
+			if err != nil {
+				return err
+			}
+			dst.SetUint(n)
+
+		case reflect.Float32, reflect.Float64:
+			dst.SetUint(uint64(src.Float()))
+
+		case reflect.Int, reflect.Int8, reflect.Int16,
+		     reflect.Int32, reflect.Int64:
+			dst.SetUint(uint64(src.Int()))
+
+		case reflect.Uint, reflect.Uint8, reflect.Uint16,
+		     reflect.Uint32, reflect.Uint64:
+			dst.SetUint(src.Uint())
+
+		default:
+			return errors.New(fmt.Sprintf("Cannot convert source kind %v to dest kind %v", src.Kind(), dst.Kind()))
+		}
 
 	case reflect.Float32, reflect.Float64:
 		dst.SetFloat(src.Float())
+		switch src.Kind() {
+		case reflect.String:
+			n, err := strconv.ParseFloat(src.String(), 64)
+			if err != nil {
+				return err
+			}
+			dst.SetFloat(n)
+
+		case reflect.Float32, reflect.Float64:
+			dst.SetFloat(src.Float())
+
+		case reflect.Int, reflect.Int8, reflect.Int16,
+		     reflect.Int32, reflect.Int64:
+			dst.SetFloat(float64(src.Int()))
+
+		case reflect.Uint, reflect.Uint8, reflect.Uint16,
+		     reflect.Uint32, reflect.Uint64:
+			dst.SetFloat(float64(src.Uint()))
+
+		default:
+			return errors.New(fmt.Sprintf("Cannot convert source kind %v to dest kind %v", src.Kind(), dst.Kind()))
+		}
 
 	case reflect.Interface:
 		dst.Set(src)
