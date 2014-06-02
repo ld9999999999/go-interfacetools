@@ -211,7 +211,7 @@ func (d *decoder) decode(sv reflect.Value, v reflect.Value) error {
 			return nil
 		}
 
-		err := d.decodeScalar(sv, nv)
+		err := d.decodeScalar(sv, nv.Elem())
 		if err == nil {
 			v.Set(nv)
 		}
@@ -254,6 +254,21 @@ func (d *decoder) mapToStruct(src reflect.Value, dst reflect.Value) error {
 	fieldIdx := make(map[string] int)
 	for i := 0; i < dst.Type().NumField(); i++ {
 		sf := dst.Type().Field(i)
+
+		if sf.Anonymous {
+			// Dig into anonymous field and attempt decode at current
+			// level there. If it is a pointer, allocate the element.
+			dv := dst.Field(i)
+			if dv.Kind() == reflect.Ptr && dv.IsNil() {
+				dv.Set(reflect.New(dv.Type().Elem()))
+				dv = dv.Elem()
+			}
+			err := d.mapToStruct(src, dv)
+			if err != nil {
+				return err
+			}
+		}
+
 		tag := sf.Tag.Get(d.tag)
 		if tag == "" {
 			// do by name (only if exported field)

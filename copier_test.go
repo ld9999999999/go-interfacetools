@@ -48,6 +48,11 @@ func TestCopyTo(t *testing.T) {
 		ByName string
 	}
 
+	type TStruct_nested struct {
+		TStruct
+		ParentI string `json:"i"`
+	}
+
 	// structs used for copyout with different types to original
 	type TStruct_o struct {
 		I string       `json:"i"`
@@ -107,7 +112,23 @@ func TestCopyTo(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Marshal error: %s", err)
 	}
-	log.Println("CopyOut result 1:", string(jsons))
+	log.Println("CopyOut result 1.a:", string(jsons))
+
+
+	// Copy out to nested anonymous struct
+	var xs_nested TStruct_nested
+	err = CopyOut(sj, &xs_nested)
+	if err != nil {
+		t.Fatalf("CopyOut error: %s", err)
+	}
+
+	jsons, err = json.MarshalIndent(&xs_nested, "", "  ")
+	if err != nil {
+		t.Fatalf("Marshal error: %s", err)
+	}
+	log.Println("CopyOut result 1.b:", string(jsons),
+	            "\nParentI:", xs_nested.ParentI,
+	            "\nChild-I:", xs_nested.TStruct.I)
 
 
 	// Copy out to a struct with incompatible field types
