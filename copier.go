@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"fmt"
 	"strconv"
+	"strings"
 )
 
 // Copier is the interface implemented by objects
@@ -278,7 +279,9 @@ func (d *decoder) mapToStruct(src reflect.Value, dst reflect.Value) error {
 		} else if tag == "-" {
 			// skip this field
 		} else {
-			fieldIdx[tag] = i
+			// split (",")
+			tagspl := strings.SplitN(tag, ",", 2)
+			fieldIdx[tagspl[0]] = i
 		}
 	}
 

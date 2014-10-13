@@ -60,7 +60,7 @@ func TestCopyTo(t *testing.T) {
 		K float64      `json:"k"`
 		M0 map[string] *MStruct_o `json:"m0"`
 		M1 map[string] MStruct    `json:"m1"`
-		S []int        `json:"s"`
+		S []int        `json:"s,omitempty"`
 		X interface{}  `json:"x"`
 		Missing string `json:"missing"`
 	}
@@ -131,7 +131,7 @@ func TestCopyTo(t *testing.T) {
 	            "\nChild-I:", xs_nested.TStruct.I)
 
 
-	// Copy out to a struct with incompatible field types
+	// Copy out to a struct with incompatible field types and omitempty tag
 	var xs0 TStruct_o
 	err = CopyOut(sj, &xs0)
 	if err != nil {
