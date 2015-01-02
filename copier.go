@@ -327,7 +327,28 @@ func (d *decoder) decodeScalar(src reflect.Value, dst reflect.Value) (err error)
 
 	switch dst.Kind() {
 	case reflect.Bool:
-		dst.SetBool(src.Bool())
+		switch src.Kind() {
+		case reflect.Bool:
+			dst.SetBool(src.Bool())
+
+		case reflect.String:
+			s := src.String()
+			dst.SetBool(s == "true" || s == "True" || s == "TRUE")
+
+		case reflect.Float32, reflect.Float64:
+			dst.SetBool(int64(src.Float()) == 0)
+
+		case reflect.Int, reflect.Int8, reflect.Int16,
+		     reflect.Int32, reflect.Int64:
+			dst.SetBool(src.Int() != 0)
+
+		case reflect.Uint, reflect.Uint8, reflect.Uint16,
+		     reflect.Uint32, reflect.Uint64:
+			dst.SetBool(src.Uint() != 0)
+
+		default:
+			return fmt.Errorf("Cannot convert source kind %v to boolean", src.Kind())
+		}
 
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		switch src.Kind() {
@@ -350,7 +371,7 @@ func (d *decoder) decodeScalar(src reflect.Value, dst reflect.Value) (err error)
 			dst.SetInt(int64(src.Uint()))
 
 		default:
-			return errors.New(fmt.Sprintf("Cannot convert source kind %v to destination kind %v", src.Kind(), dst.Kind()))
+			return fmt.Errorf("Cannot convert source kind %v to destination kind %v", src.Kind(), dst.Kind())
 		}
 
 
@@ -375,7 +396,7 @@ func (d *decoder) decodeScalar(src reflect.Value, dst reflect.Value) (err error)
 			dst.SetUint(src.Uint())
 
 		default:
-			return errors.New(fmt.Sprintf("Cannot convert source kind %v to dest kind %v", src.Kind(), dst.Kind()))
+			return fmt.Errorf("Cannot convert source kind %v to dest kind %v", src.Kind(), dst.Kind())
 		}
 
 	case reflect.Float32, reflect.Float64:
@@ -400,7 +421,7 @@ func (d *decoder) decodeScalar(src reflect.Value, dst reflect.Value) (err error)
 			dst.SetFloat(float64(src.Uint()))
 
 		default:
-			return errors.New(fmt.Sprintf("Cannot convert source kind %v to dest kind %v", src.Kind(), dst.Kind()))
+			return fmt.Errorf("Cannot convert source kind %v to dest kind %v", src.Kind(), dst.Kind())
 		}
 
 	case reflect.Interface:

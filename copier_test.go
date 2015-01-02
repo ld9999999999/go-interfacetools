@@ -46,6 +46,7 @@ func TestCopyTo(t *testing.T) {
 		X  interface{} `json:"x"`
 		Z  *int    `json:"z"`
 		ByName string
+		Str2Bool string `json:"str2bool"`
 	}
 
 	type TStruct_nested struct {
@@ -63,6 +64,7 @@ func TestCopyTo(t *testing.T) {
 		S []int        `json:"s,omitempty"`
 		X interface{}  `json:"x"`
 		Missing string `json:"missing"`
+		StrToBool bool `json:"str2bool"`
 	}
 
 	// Start of test code
@@ -78,6 +80,7 @@ func TestCopyTo(t *testing.T) {
 		X : interface{}(map[string] string{"mx":"abc"}),
 		Z : nil,
 		ByName: "This is byname",
+		Str2Bool: "true",
 	}
 	ts.JP = new(int)
 	*ts.JP = 369
