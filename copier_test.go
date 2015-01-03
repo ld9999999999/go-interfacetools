@@ -46,7 +46,9 @@ func TestCopyTo(t *testing.T) {
 		X  interface{} `json:"x"`
 		Z  *int    `json:"z"`
 		ByName string
-		Str2Bool string `json:"str2bool"`
+		Str2Bool string   `json:"str2bool"`
+		NullStruct string `json:"nullstruct"`
+		NullVal string    `json:"nullval"`
 	}
 
 	type TStruct_nested struct {
@@ -65,6 +67,8 @@ func TestCopyTo(t *testing.T) {
 		X interface{}  `json:"x"`
 		Missing string `json:"missing"`
 		StrToBool bool `json:"str2bool"`
+		NullStruct *MStruct `json:"nullstruct"`
+		NullVal *int        `json:"nullval"`
 	}
 
 	// Start of test code

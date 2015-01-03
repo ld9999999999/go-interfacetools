@@ -151,8 +151,19 @@ func (d *decoder) decode(sv reflect.Value, v reflect.Value) error {
 		e = v.Type()
 	}
 
+	// Allow an empty string to be a nil value for pointers as some
+	// input formats don't have a nil compatible type
+	nullvalue := false
+	if sv.Kind() == reflect.String {
+		nullvalue = sv.String() == ""
+	}
+
 	switch e.Kind() {
 	case reflect.Map:
+		if nullvalue {
+			return nil
+		}
+
 		if d.tryCopyIn(sv, v) {
 			return nil
 		}
@@ -171,6 +182,10 @@ func (d *decoder) decode(sv reflect.Value, v reflect.Value) error {
 		return d.mapCopy(sv, v)
 
 	case reflect.Struct:
+		if nullvalue {
+			return nil
+		}
+
 		if d.tryCopyIn(sv, v) {
 			return nil
 		}
@@ -190,6 +205,10 @@ func (d *decoder) decode(sv reflect.Value, v reflect.Value) error {
 		}
 
 	case reflect.Slice, reflect.Array:
+		if nullvalue {
+			return nil
+		}
+
 		if d.tryCopyIn(sv, v) {
 			return nil
 		}
@@ -206,6 +225,10 @@ func (d *decoder) decode(sv reflect.Value, v reflect.Value) error {
 	}
 
 	if v.Kind() == reflect.Ptr {
+		if nullvalue {
+			return nil
+		}
+
 		nv := reflect.New(e)
 
 		if d.tryCopyIn(sv, nv) {
