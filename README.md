@@ -13,3 +13,7 @@ The conversion types supported:
 * base type to base type
 
 When converting from `map` to `struct`, it uses the same tagging rules as `encoding/json`.
+
+**Special case: null values**
+
+Some file formats do not have a simple mechanism for representing null/nil values. A string with a value of "null" can actually be a legitimate value so it can't be assumed that such a string is null. To accomodate such input formats, an empty string is considered to be a null value if the destination is a pointer, map, struct, slice, or array.
