@@ -49,6 +49,7 @@ func TestCopyTo(t *testing.T) {
 		Str2Bool string   `json:"str2bool"`
 		NullStruct string `json:"nullstruct"`
 		NullVal string    `json:"nullval"`
+		HybridMap map[string] interface{} `json:"hybrid"`
 	}
 
 	type TStruct_nested struct {
@@ -69,6 +70,7 @@ func TestCopyTo(t *testing.T) {
 		StrToBool bool `json:"str2bool"`
 		NullStruct *MStruct `json:"nullstruct"`
 		NullVal *int        `json:"nullval"`
+		HybridMap map[string] *MStruct `json:"hybrid"`
 	}
 
 	// Start of test code
@@ -85,6 +87,7 @@ func TestCopyTo(t *testing.T) {
 		Z : nil,
 		ByName: "This is byname",
 		Str2Bool: "true",
+		HybridMap: map[string] interface{}{"list":[]int{1,2,3},"mstruct":newM(12,"hybrid","hybridval")},
 	}
 	ts.JP = new(int)
 	*ts.JP = 369

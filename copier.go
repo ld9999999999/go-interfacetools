@@ -20,6 +20,18 @@ type Copier interface {
 	CopyIn(interface{}) error
 }
 
+// Ignore incompatible structs during copy (default behavior)
+//
+// An example scenario is where you have a map of hybrid datatypes
+// to be copied to a map of singular struct:
+//  e.g. src_map = { "list": [ 1, 2, 3], "struct": { "item1": "STRING" }}
+//       dest_map == map[string] struct { Item1 string `json:"item`"` }
+//
+// In this case dest_map does not have a "list" type so it is incompatible,
+// therefore it is desireable to IgnoreIncompatStruct when CopyOut.
+var IgnoreIncompatStruct bool = true
+var ErrIncompatStruct = errors.New("Incompatible struct")
+
 // Performs a deep-copy of source object to the passed in interface.
 //
 // If the object is a struct, then the copy is attempted based on the tag
@@ -169,7 +181,7 @@ func (d *decoder) decode(sv reflect.Value, v reflect.Value) error {
 		}
 
 		if sv.Kind() != reflect.Map {
-			return errors.New("src not map")
+			return ErrIncompatStruct
 		}
 		t := v.Type()
 		if t.Key().Kind() != reflect.String {
@@ -182,17 +194,17 @@ func (d *decoder) decode(sv reflect.Value, v reflect.Value) error {
 		return d.mapCopy(sv, v)
 
 	case reflect.Struct:
-		if nullvalue {
+		if d.tryCopyIn(sv, v) {
 			return nil
 		}
 
-		if d.tryCopyIn(sv, v) {
+		if nullvalue {
 			return nil
 		}
 
 		// Decode map[string] interface{} into struct
 		if sv.Kind() != reflect.Map {
-			return errors.New("src not map")
+			return ErrIncompatStruct
 		}
 		if v.Kind() == reflect.Ptr && v.IsNil() {
 			v.Set(reflect.New(e))
@@ -205,16 +217,16 @@ func (d *decoder) decode(sv reflect.Value, v reflect.Value) error {
 		}
 
 	case reflect.Slice, reflect.Array:
-		if nullvalue {
-			return nil
-		}
-
 		if d.tryCopyIn(sv, v) {
 			return nil
 		}
 
+		if nullvalue {
+			return nil
+		}
+
 		if sv.Kind() != reflect.Slice {
-			return errors.New("src not slice")
+			return ErrIncompatStruct
 		}
 
 		if v.Kind() == reflect.Slice && v.IsNil() {
@@ -225,13 +237,13 @@ func (d *decoder) decode(sv reflect.Value, v reflect.Value) error {
 	}
 
 	if v.Kind() == reflect.Ptr {
-		if nullvalue {
-			return nil
-		}
-
 		nv := reflect.New(e)
 
 		if d.tryCopyIn(sv, nv) {
+			return nil
+		}
+
+		if nullvalue && nv.Elem().Kind() != reflect.String {
 			return nil
 		}
 
@@ -262,14 +274,16 @@ func (d *decoder) mapCopy(src reflect.Value, dst reflect.Value) error {
 
 		d.pushPath(sv[i].String())
 		err := d.decode(src.MapIndex(sv[i]), ot)
-		if err != nil {
+		if err != nil && err != ErrIncompatStruct {
 			err = errors.New(d.pathString() + err.Error())
 			d.path = nil
 			return err
 		}
 		d.popPath()
 
-		dst.SetMapIndex(sv[i], ot.Elem())
+		if err == nil {
+			dst.SetMapIndex(sv[i], ot.Elem())
+		}
 	}
 	return nil
 }
@@ -288,7 +302,7 @@ func (d *decoder) mapToStruct(src reflect.Value, dst reflect.Value) error {
 				dv = dv.Elem()
 			}
 			err := d.mapToStruct(src, dv)
-			if err != nil {
+			if err != nil && err != ErrIncompatStruct {
 				return err
 			}
 		}
@@ -309,11 +323,11 @@ func (d *decoder) mapToStruct(src reflect.Value, dst reflect.Value) error {
 	}
 
 	sv := src.MapKeys()
-	for i, k := range sv {
+	for _, k := range sv {
 		if it, ok := fieldIdx[k.String()]; ok {
-			d.pushPath(sv[i].String())
-			err := d.decode(src.MapIndex(sv[i]), dst.Field(it))
-			if err != nil {
+			d.pushPath(k.String())
+			err := d.decode(src.MapIndex(k), dst.Field(it))
+			if err != nil && err != ErrIncompatStruct {
 				err = errors.New(d.pathString() + err.Error())
 				d.path = nil
 				return err
