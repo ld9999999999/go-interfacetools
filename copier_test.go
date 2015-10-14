@@ -99,7 +99,7 @@ func TestCopyTo(t *testing.T) {
 
 	mbuf, err := json.Marshal(&ts)
 	if err != nil {
-		t.Fatalf("Marshal error: %s", err)
+		t.Fatal("Marshal error:", err)
 	}
 	log.Println("mbuf:", string(mbuf))
 
@@ -107,7 +107,7 @@ func TestCopyTo(t *testing.T) {
 	var sj interface{}
 	err = json.Unmarshal(mbuf, &sj)
 	if err != nil {
-		t.Fatalf("Unmarshal error:", err)
+		t.Fatal("Unmarshal error:", err)
 	}
 
 
@@ -115,12 +115,12 @@ func TestCopyTo(t *testing.T) {
 	var xs TStruct
 	err = CopyOut(sj, &xs)
 	if err != nil {
-		t.Fatalf("CopyOut error: %s", err)
+		t.Fatal("CopyOut error:", err)
 	}
 
 	jsons, err := json.MarshalIndent(&xs, "", "  ")
 	if err != nil {
-		t.Fatalf("Marshal error: %s", err)
+		t.Fatal("Marshal error:", err)
 	}
 	log.Println("CopyOut result 1.a:", string(jsons))
 
@@ -129,12 +129,12 @@ func TestCopyTo(t *testing.T) {
 	var xs_nested TStruct_nested
 	err = CopyOut(sj, &xs_nested)
 	if err != nil {
-		t.Fatalf("CopyOut error: %s", err)
+		t.Fatal("CopyOut error:", err)
 	}
 
 	jsons, err = json.MarshalIndent(&xs_nested, "", "  ")
 	if err != nil {
-		t.Fatalf("Marshal error: %s", err)
+		t.Fatal("Marshal error:", err)
 	}
 	log.Println("CopyOut result 1.b:", string(jsons),
 	            "\nParentI:", xs_nested.ParentI,
@@ -145,7 +145,7 @@ func TestCopyTo(t *testing.T) {
 	var xs0 TStruct_o
 	err = CopyOut(sj, &xs0)
 	if err != nil {
-		t.Fatalf("CopyOut for struct with CopyIn() error: %s", err)
+		t.Fatal("CopyOut for struct with CopyIn() error:", err)
 	}
 	jsons, err = json.MarshalIndent(&xs0, "", "  ")
 	log.Println("CopyOut result 2:", string(jsons))
@@ -157,7 +157,7 @@ func TestCopyTo(t *testing.T) {
 	var n int
 	err = CopyOut(sj2, &n)
 	if err != nil {
-		t.Fatalf("CopyOut scalar error: %s", err)
+		t.Fatal("CopyOut scalar error:", err)
 	}
 	log.Println("N:", n)
 }

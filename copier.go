@@ -251,7 +251,11 @@ func (d *decoder) decode(sv reflect.Value, v reflect.Value) error {
 		if err == nil {
 			v.Set(nv)
 		}
-		return err
+		if !(IgnoreIncompatStruct && err == ErrIncompatStruct) {
+			return err
+		} else {
+			return nil
+		}
 	}
 
 	if d.tryCopyIn(sv, v) {
@@ -384,7 +388,12 @@ func (d *decoder) decodeScalar(src reflect.Value, dst reflect.Value) (err error)
 			dst.SetBool(src.Uint() != 0)
 
 		default:
-			return fmt.Errorf("Cannot convert source kind %v to boolean", src.Kind())
+			if !IgnoreIncompatStruct {
+				return fmt.Errorf("Cannot convert source kind %v to boolean", src.Kind())
+			} else {
+				return ErrIncompatStruct
+			}
+
 		}
 
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
@@ -408,7 +417,11 @@ func (d *decoder) decodeScalar(src reflect.Value, dst reflect.Value) (err error)
 			dst.SetInt(int64(src.Uint()))
 
 		default:
-			return fmt.Errorf("Cannot convert source kind %v to destination kind %v", src.Kind(), dst.Kind())
+			if !IgnoreIncompatStruct {
+				return fmt.Errorf("Cannot convert source kind %v to destination kind %v", src.Kind(), dst.Kind())
+			} else {
+				return ErrIncompatStruct
+			}
 		}
 
 
@@ -433,7 +446,11 @@ func (d *decoder) decodeScalar(src reflect.Value, dst reflect.Value) (err error)
 			dst.SetUint(src.Uint())
 
 		default:
-			return fmt.Errorf("Cannot convert source kind %v to dest kind %v", src.Kind(), dst.Kind())
+			if !IgnoreIncompatStruct {
+				return fmt.Errorf("Cannot convert source kind %v to dest kind %v", src.Kind(), dst.Kind())
+			} else {
+				return ErrIncompatStruct
+			}
 		}
 
 	case reflect.Float32, reflect.Float64:
@@ -458,7 +475,12 @@ func (d *decoder) decodeScalar(src reflect.Value, dst reflect.Value) (err error)
 			dst.SetFloat(float64(src.Uint()))
 
 		default:
-			return fmt.Errorf("Cannot convert source kind %v to dest kind %v", src.Kind(), dst.Kind())
+			if !IgnoreIncompatStruct {
+				return fmt.Errorf("Cannot convert source kind %v to dest kind %v", src.Kind(), dst.Kind())
+			} else {
+				return ErrIncompatStruct
+			}
+
 		}
 
 	case reflect.Interface:
@@ -466,9 +488,14 @@ func (d *decoder) decodeScalar(src reflect.Value, dst reflect.Value) (err error)
 
 	case reflect.String:
 		if src.Kind() != reflect.String {
-			return errors.New("not string kind: " + src.Kind().String())
+			if !IgnoreIncompatStruct {
+				return errors.New("not string kind: " + src.Kind().String())
+			} else {
+				return ErrIncompatStruct
+			}
+		} else {
+			dst.SetString(src.String())
 		}
-		dst.SetString(src.String())
 	}
 
 	return nil
